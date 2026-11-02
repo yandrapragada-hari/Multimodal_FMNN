@@ -7,19 +7,20 @@ Directly investigates and answers Research Questions RQ1 - RQ4:
 - RQ4: Uncertainty quantification, Expected Calibration Error (ECE), and Risk-Coverage abstention.
 """
 
-import sys
 import os
+import sys
+
 import numpy as np
-from sklearn.neural_network import MLPClassifier
-from sklearn.metrics import f1_score, accuracy_score, brier_score_loss
+from sklearn.metrics import accuracy_score, f1_score
 from sklearn.model_selection import train_test_split
+from sklearn.neural_network import MLPClassifier
 
 # Ensure mm_rfmnn is importable
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from mm_rfmnn.model import MMRFMNNClassifier
 from mm_rfmnn.base.hyperbox import FMNN
 from mm_rfmnn.encoders.normalizer import ModalityNormalizer
+from mm_rfmnn.model import MMRFMNNClassifier
 
 
 def generate_multimodal_dataset(n_samples: int = 600, n_classes: int = 3, random_state: int = 42):

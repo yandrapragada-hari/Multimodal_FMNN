@@ -7,7 +7,7 @@ class ModalityNormalizer:
     """Scales raw features to [0, 1] range based on training data.
 
     Fitted strictly on training partition to eliminate data leakage.
-    Supports min-max scaling and outlier-resistant quantile bounds.
+    Supports min-max scaling, outlier-resistant quantile bounds, and incremental partial_fit.
     """
 
     def __init__(
@@ -46,6 +46,34 @@ class ModalityNormalizer:
             self.max_vals = np.percentile(X_valid, q_high, axis=0)
         else:
             raise ValueError(f"Unknown normalization method: {self.method}")
+
+        # Guard against zero-variance features
+        diff = self.max_vals - self.min_vals
+        self.max_vals = np.where(diff < self.eps, self.min_vals + 1.0, self.max_vals)
+        return self
+
+    def partial_fit(
+        self, X: np.ndarray, mask: np.ndarray | None = None
+    ) -> "ModalityNormalizer":
+        """Incrementally expands min/max bounds with streaming mini-batches."""
+        X = np.asarray(X, dtype=np.float64)
+        if mask is not None:
+            mask = np.asarray(mask, dtype=bool)
+            X_valid = X[mask]
+        else:
+            X_valid = X
+
+        if len(X_valid) == 0:
+            return self
+
+        if self.min_vals is None or self.max_vals is None:
+            return self.fit(X_valid)
+
+        batch_min = np.min(X_valid, axis=0)
+        batch_max = np.max(X_valid, axis=0)
+
+        self.min_vals = np.minimum(self.min_vals, batch_min)
+        self.max_vals = np.maximum(self.max_vals, batch_max)
 
         # Guard against zero-variance features
         diff = self.max_vals - self.min_vals

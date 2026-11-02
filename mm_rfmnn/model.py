@@ -197,6 +197,143 @@ class MMRFMNNClassifier(BaseEstimator, ClassifierMixin):
 
         return self
 
+    def partial_fit(
+        self,
+        X_modalities: list[np.ndarray],
+        y: np.ndarray,
+        classes: np.ndarray | None = None,
+        mask: np.ndarray | None = None,
+    ) -> "MMRFMNNClassifier":
+        """Incrementally updates FMNN hyperboxes with a streaming multimodal batch.
+
+        Parameters
+        ----------
+        X_modalities : list of K arrays, each of shape (N, d_k)
+        y : array of shape (N,)
+        classes : optional array of expected classes across streams
+        mask : optional array of shape (N, K)
+        """
+        y = np.asarray(y, dtype=np.int64)
+        N = len(y)
+        K = len(X_modalities)
+
+        if mask is None:
+            mask = np.ones((N, K), dtype=bool)
+        else:
+            mask = np.asarray(mask, dtype=bool)
+
+        thetas = self._resolve_param_list(self.theta, K)
+        gammas = self._resolve_param_list(self.gamma, K)
+
+        if self.fuser_ is None or self.num_modalities_ == 0:
+            # First initialization in streaming mode
+            self.num_modalities_ = K
+            if classes is not None:
+                self.classes_ = np.asarray(classes, dtype=np.int64)
+            else:
+                self.classes_ = np.unique(y)
+            self.num_classes_ = int(np.max(self.classes_)) + 1
+
+            self.normalizers_ = [ModalityNormalizer(method="minmax") for _ in range(K)]
+            self.fmnns_ = [FMNN(theta=thetas[k], gamma=gammas[k]) for k in range(K)]
+            self.reliability_estimators_ = [
+                ReliabilityEstimator(
+                    model_type="mlp" if self.reliability_model == "mlp" else "logistic",
+                    rule_based_fallback=self.reliability_model == "rule_based",
+                    random_state=self.random_state + k,
+                )
+                for k in range(K)
+            ]
+            self.temperature_calibrators_ = [TemperatureCalibrator() for _ in range(K)]
+            self.fuser_ = ReliabilityFuser(
+                fusion_method=self.fusion_method,
+                tau_conf=self.tau_conf,
+                tau_entropy=self.tau_entropy,
+                tau_disagreement=self.tau_disagreement,
+                tau_min_reliability=self.tau_min_reliability,
+            )
+        else:
+            if classes is not None:
+                self.classes_ = np.unique(
+                    np.concatenate([self.classes_, np.asarray(classes, dtype=np.int64)])
+                )
+            else:
+                self.classes_ = np.unique(np.concatenate([self.classes_, y]))
+            self.num_classes_ = int(np.max(self.classes_)) + 1
+
+        for k in range(K):
+            pres_k = mask[:, k]
+            if np.any(pres_k):
+                self.normalizers_[k].partial_fit(X_modalities[k], mask=pres_k)
+                Z_k = self.normalizers_[k].transform(X_modalities[k])
+                self.fmnns_[k].partial_fit(Z_k[pres_k], y[pres_k], classes=self.classes_)
+
+        return self
+
+    def prune_hyperboxes(
+        self,
+        min_samples: int = 1,
+        overlap_threshold: float = 0.98,
+        preserve_class_presence: bool = True,
+    ) -> dict[str, Any]:
+        """Prunes low-support and redundant hyperboxes across all modality banks.
+
+        Parameters
+        ----------
+        min_samples : int, default=1
+            Minimum sample support required to retain a hyperbox.
+        overlap_threshold : float, default=0.98
+            Overlap containment ratio for subsumption pruning.
+        preserve_class_presence : bool, default=True
+            Guarantees every class retains at least one representative hyperbox.
+
+        Returns
+        -------
+        summary : dict[str, Any]
+            Consolidated pruning statistics across all modalities.
+        """
+        assert self.num_modalities_ > 0, "Model must be fitted before pruning."
+
+        per_modality_stats = []
+        total_initial = 0
+        total_final = 0
+
+        for k in range(self.num_modalities_):
+            stat_k = self.fmnns_[k].prune(
+                min_samples=min_samples,
+                overlap_threshold=overlap_threshold,
+                preserve_class_presence=preserve_class_presence,
+            )
+            per_modality_stats.append(stat_k)
+            total_initial += stat_k["initial_boxes"]
+            total_final += stat_k["final_boxes"]
+
+        total_pruned = total_initial - total_final
+        reduction_ratio = (
+            float(total_pruned / total_initial) if total_initial > 0 else 0.0
+        )
+
+        return {
+            "total_initial_boxes": total_initial,
+            "total_final_boxes": total_final,
+            "total_pruned_boxes": total_pruned,
+            "overall_reduction_ratio": reduction_ratio,
+            "modalities": per_modality_stats,
+        }
+
+    def get_hyperbox_stats(self) -> dict[str, Any]:
+        """Returns structural statistics for all modality hyperbox banks."""
+        boxes_per_mod = [
+            fmnn.bank.num_boxes if fmnn.bank is not None else 0 for fmnn in self.fmnns_
+        ]
+        return {
+            "total_boxes": sum(boxes_per_mod),
+            "boxes_per_modality": boxes_per_mod,
+            "num_modalities": self.num_modalities_,
+            "num_classes": self.num_classes_,
+        }
+
+
     def _infer_evidence_and_reliabilities(
         self,
         X_modalities: list[np.ndarray],

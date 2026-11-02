@@ -1,13 +1,15 @@
 """Fuzzy Min-Max Neural Network (FMNN) hyperbox representation, expansion, contraction,
 
-and vectorized membership evaluation.
+vectorized membership evaluation, and incremental online learning.
 """
+
+from typing import Any
 
 import numpy as np
 
 
 class HyperboxBank:
-    """Manages hyperbox geometric bounds [V, W] and class labels for one modality."""
+    """Manages hyperbox geometric bounds [V, W], sample support, and class labels for one modality."""
 
     def __init__(self, dimension: int, gamma: float = 1.0):
         self.dimension = dimension
@@ -15,15 +17,52 @@ class HyperboxBank:
         self.V: list[np.ndarray] = []  # Min points, shape (d,)
         self.W: list[np.ndarray] = []  # Max points, shape (d,)
         self.classes: list[int] = []  # Class label per hyperbox
+        self.sample_counts: list[int] = []  # Number of samples supported/absorbed by box
 
     @property
     def num_boxes(self) -> int:
         return len(self.classes)
 
-    def add_box(self, v: np.ndarray, w: np.ndarray, class_idx: int):
+    def add_box(
+        self,
+        v: np.ndarray,
+        w: np.ndarray,
+        class_idx: int,
+        sample_count: int = 1,
+    ) -> None:
+        """Adds a new hyperbox with initial bounds and support count."""
         self.V.append(np.asarray(v, dtype=np.float64).copy())
         self.W.append(np.asarray(w, dtype=np.float64).copy())
         self.classes.append(int(class_idx))
+        self.sample_counts.append(int(sample_count))
+
+    def filter_boxes(
+        self,
+        keep_mask: np.ndarray,
+        updated_counts: np.ndarray | None = None,
+    ) -> None:
+        """Filters hyperboxes in-place based on a boolean mask."""
+        keep_mask = np.asarray(keep_mask, dtype=bool)
+        if len(keep_mask) != self.num_boxes:
+            raise ValueError(
+                f"keep_mask length {len(keep_mask)} does not match box count {self.num_boxes}."
+            )
+
+        indices = np.where(keep_mask)[0]
+        self.V = [self.V[i] for i in indices]
+        self.W = [self.W[i] for i in indices]
+        self.classes = [self.classes[i] for i in indices]
+
+        if updated_counts is not None:
+            self.sample_counts = [int(c) for c in updated_counts]
+        else:
+            self.sample_counts = [self.sample_counts[i] for i in indices]
+
+    def remove_boxes(self, indices: list[int] | np.ndarray) -> None:
+        """Removes specified hyperbox indices in-place."""
+        idx_set = {int(i) for i in indices}
+        keep_mask = np.array([i not in idx_set for i in range(self.num_boxes)], dtype=bool)
+        self.filter_boxes(keep_mask)
 
     def get_arrays(self) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Returns V, W as (M, d) and classes as (M,)."""
@@ -113,24 +152,44 @@ class HyperboxBank:
 class FMNN:
     """Modality-specific Fuzzy Min-Max Neural Network classifier with
 
-    Simpson expansion, overlap contraction, and continuous membership.
+    Simpson expansion, overlap contraction, continuous membership, and incremental adaptation.
     """
 
     def __init__(self, theta: float = 0.2, gamma: float = 1.0):
         self.theta = theta  # Max hyperbox size in [0, 1]
         self.gamma = gamma  # Distance decay coefficient
         self.bank: HyperboxBank | None = None
-        self.classes_: np.ndarray = np.array([])
+        self.classes_: np.ndarray = np.array([], dtype=np.int64)
         self.num_classes_: int = 0
 
     def fit(self, X: np.ndarray, y: np.ndarray) -> "FMNN":
+        """Fits FMNN from scratch on dataset X and targets y."""
+        self.bank = None
+        self.classes_ = np.array([], dtype=np.int64)
+        self.num_classes_ = 0
+        return self.partial_fit(X, y)
+
+    def partial_fit(
+        self,
+        X: np.ndarray,
+        y: np.ndarray,
+        classes: np.ndarray | None = None,
+    ) -> "FMNN":
+        """Incrementally expands hyperboxes with streaming mini-batch (X, y)."""
         X = np.asarray(X, dtype=np.float64)
         y = np.asarray(y, dtype=np.int64)
         N, d = X.shape
 
-        self.bank = HyperboxBank(dimension=d, gamma=self.gamma)
-        self.classes_ = np.unique(y)
-        self.num_classes_ = int(np.max(y)) + 1 if len(self.classes_) > 0 else 0
+        if self.bank is None:
+            self.bank = HyperboxBank(dimension=d, gamma=self.gamma)
+
+        if classes is not None:
+            new_classes = np.unique(np.concatenate([self.classes_, np.asarray(classes, dtype=np.int64)]))
+        else:
+            new_classes = np.unique(np.concatenate([self.classes_, y]))
+
+        self.classes_ = new_classes
+        self.num_classes_ = int(np.max(self.classes_)) + 1 if len(self.classes_) > 0 else 0
 
         for i in range(N):
             x_i = X[i]
@@ -145,7 +204,7 @@ class FMNN:
         new_w = np.maximum(w, x)
         return bool(np.all((new_w - new_v) <= self.theta + 1e-9))
 
-    def _expand_or_create(self, x: np.ndarray, class_idx: int):
+    def _expand_or_create(self, x: np.ndarray, class_idx: int) -> None:
         assert self.bank is not None
         # 1. Search for existing hyperbox of the same class that can accommodate x
         expanded = False
@@ -157,6 +216,7 @@ class FMNN:
                     # Expand box j
                     self.bank.V[j] = np.minimum(v, x)
                     self.bank.W[j] = np.maximum(w, x)
+                    self.bank.sample_counts[j] += 1
                     expanded = True
                     # Resolve overlaps with hyperboxes of other classes
                     self._resolve_overlaps(j)
@@ -164,9 +224,9 @@ class FMNN:
 
         # 2. If no box can accommodate x without exceeding theta, create new box
         if not expanded:
-            self.bank.add_box(x, x, class_idx)
+            self.bank.add_box(x, x, class_idx, sample_count=1)
 
-    def _resolve_overlaps(self, j: int):
+    def _resolve_overlaps(self, j: int) -> None:
         """Simpson's overlap test and dimensional contraction for box j against other-class boxes."""
         assert self.bank is not None
         v_j = self.bank.V[j]
@@ -221,3 +281,29 @@ class FMNN:
     def predict(self, X: np.ndarray) -> np.ndarray:
         evidence, _, _ = self.compute_evidence(X)
         return np.argmax(evidence, axis=1)
+
+    def prune(
+        self,
+        min_samples: int = 1,
+        overlap_threshold: float = 0.98,
+        preserve_class_presence: bool = True,
+    ) -> dict[str, Any]:
+        """Prunes low-support and redundant hyperboxes from this FMNN."""
+        if self.bank is None or self.bank.num_boxes == 0:
+            return {
+                "initial_boxes": 0,
+                "final_boxes": 0,
+                "pruned_boxes": 0,
+                "reduction_ratio": 0.0,
+                "pruned_redundant": 0,
+                "pruned_low_support": 0,
+            }
+
+        from mm_rfmnn.base.pruning import HyperboxPruner
+
+        pruner = HyperboxPruner(
+            min_samples=min_samples,
+            overlap_threshold=overlap_threshold,
+            preserve_class_presence=preserve_class_presence,
+        )
+        return pruner.prune(self.bank)

@@ -1,0 +1,19 @@
+# Agent-related files and folders
+.agents/
+.agent/
+*.agent
+agent/
+agents/
+.gemini/
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# Ignore .gitignore itself
+.gitignore
+
+# Jupyter Checkpoints
+.ipynb_checkpoints/

@@ -1,11 +1,12 @@
 """Unit and integration test suite for MM-RFMNN."""
 
 import unittest
+
 import numpy as np
-from mm_rfmnn.base.hyperbox import HyperboxBank, FMNN
+
+from mm_rfmnn.base.hyperbox import FMNN, HyperboxBank
 from mm_rfmnn.encoders.normalizer import ModalityNormalizer
-from mm_rfmnn.reliability.estimator import ReliabilityEstimator, MetaFeatureExtractor
-from mm_rfmnn.fusion.fuser import TemperatureCalibrator, ReliabilityFuser
+from mm_rfmnn.fusion.fuser import ReliabilityFuser
 from mm_rfmnn.model import MMRFMNNClassifier
 
 
@@ -63,7 +64,7 @@ class TestMMRFMNN(unittest.TestCase):
         rel2 = np.array([0.7, 0.6])
         # Sample 0: both present; Sample 1: modality 1 missing
         mask = np.array([[True, True], [False, True]])
-        alphas, masked_rel = fuser.compute_fusion_weights([rel1, rel2], mask=mask)
+        alphas, _masked_rel = fuser.compute_fusion_weights([rel1, rel2], mask=mask)
 
         # In sample 1, modality 1 is absent, so alpha for modality 1 must be exactly 0.0
         self.assertAlmostEqual(alphas[1, 0], 0.0, places=5)
