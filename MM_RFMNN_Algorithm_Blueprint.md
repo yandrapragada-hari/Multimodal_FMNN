@@ -457,3 +457,38 @@ classDiagram
 8. **Class Imbalance**: Hyperbox expansion thresholds $\theta_k$ and focal classification loss weights dynamically scale with inverse class frequencies.
 9. **Reliability vs Guarantee Claims**: Formalized through empirical Risk-Coverage curves and Brier decomposition rather than ungrounded theoretical certainty claims.
 10. **Explainable Diagnostics**: Every inference returns a structured attribution payload: winning hyperbox coordinates, distance margins, and normalized alpha weights, providing transparent geometric auditability.
+
+---
+
+## 8. Phase 3 & Phase 4 Extensions
+
+### 8.1 Geometric Subsumption & Low-Support Pruning
+Hyperbox quantization can accumulate redundant or noisy hyperboxes during expansion. MM-RFMNN incorporates a two-tier compression scheme:
+1. **Low-Support Elimination**: Any hyperbox $B_j^{(k)}$ with sample count $N_j^{(k)} < \tau_{\text{supp}}$ is pruned unless it is the sole representative of class $c_j$.
+2. **Geometric Subsumption**: Hyperbox $B_a$ is subsumed by $B_b$ if $c_a = c_b$, $V_b \le V_a$, and $W_b \ge W_a$. The redundant box $B_a$ is removed and sample counts merged:
+$$N_b \leftarrow N_b + N_a$$
+
+### 8.2 Streaming Adaptation & Online Memory Bounding
+To support continuous data streams, the `OnlineStreamAdapter` provides `partial_fit(X_batch, y_batch)`:
+- Existing hyperboxes are expanded if Simpson criteria hold.
+- New hyperboxes are created if expansion violates threshold $\theta_k$.
+- Dimension-wise overlap checking contracts conflicting boundaries across classes.
+- Periodic pruning every $B_{\text{prune}}$ iterations maintains bounded memory footprint $\mathcal{O}(M_{\max})$.
+
+### 8.3 Turnkey Raw Multimodal Encoders & Subspace Compression
+To prevent hyperbox sparsity in high dimensions ($d > 128$), raw modalities are projected into a compact subspace $d_k \in [16, 48]$:
+1. **Vision (`ImageFeatureEncoder`)**: Spatial pooling / patch averaging followed by deterministic orthonormal projection $\mathbf{P} \in \mathbb{R}^{d_{\text{raw}} \times d_k}$ and MinMax scaling.
+2. **Audio (`AudioFeatureEncoder`)**: Mel-frequency energy summaries and log-spectral moments projected onto compact orthonormal bases.
+3. **Text (`TextFeatureEncoder`)**: Hashing term-frequency and character n-gram embeddings with uniform quantile normalization.
+4. **Tabular (`TabularQuantileEncoder`)**: Non-linear empirical cumulative distribution transformation $F(x) = \frac{1}{N} \sum \mathbf{1}(x_i \le x)$ guaranteeing uniform $[0, 1]^{d_k}$ hyperbox domains.
+
+### 8.4 Density-Adaptive Expansion Threshold Autotuning
+Instead of static hyperparameter search, `AdaptiveThetaEstimator` computes $\theta_k$ directly from training data distributions:
+$$\theta_k = \text{clip}\left(\lambda_{\text{disp}} \cdot \bar{\sigma}_k + \lambda_{\text{marg}} \cdot \bar{\Delta}_k, \, \theta_{\min}, \, \theta_{\max}\right)$$
+where $\bar{\sigma}_k$ is the median intra-class standard deviation along dimension $k$, and $\bar{\Delta}_k$ is the median margin to nearest inter-class neighbors.
+
+### 8.5 Cross-Modal Contradiction Abstention
+Let $P_i^{(a)}$ and $P_i^{(b)}$ be high-confidence class predictions from modalities $a$ and $b$ exceeding confidence threshold $\tau_{\text{conf}}$. If the empirical training co-occurrence matrix $\mathbf{C} \in [0, 1]^{C \times C}$ satisfies:
+$$\mathbf{C}(\hat{y}_a, \hat{y}_b) < \tau_{\text{conflict}}$$
+the system detects an epistemic contradiction and returns abstention flag $\hat{y}_i = -1$.
+

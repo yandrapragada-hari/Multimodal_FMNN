@@ -6,8 +6,10 @@ import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.model_selection import train_test_split
 
+from mm_rfmnn.base.adaptive_theta import AdaptiveThetaEstimator
 from mm_rfmnn.base.hyperbox import FMNN
 from mm_rfmnn.encoders.normalizer import ModalityNormalizer
+from mm_rfmnn.fusion.conflict import CrossModalConflictDetector
 from mm_rfmnn.fusion.fuser import ReliabilityFuser, TemperatureCalibrator
 from mm_rfmnn.reliability.estimator import MetaFeatureExtractor, ReliabilityEstimator
 
@@ -40,7 +42,7 @@ class MMRFMNNClassifier(BaseEstimator, ClassifierMixin):
 
     def __init__(
         self,
-        theta: float | list[float] = 0.2,
+        theta: float | list[float] | str = 0.2,
         gamma: float | list[float] = 1.0,
         fusion_method: str = "arithmetic",
         reliability_model: str = "logistic",
@@ -49,6 +51,8 @@ class MMRFMNNClassifier(BaseEstimator, ClassifierMixin):
         tau_entropy: float = 1.80,
         tau_disagreement: float = 0.60,
         tau_min_reliability: float = 0.15,
+        conflict_detection_enabled: bool = False,
+        tau_conflict: float = 0.55,
         random_state: int = 42,
     ):
         self.theta = theta
@@ -60,6 +64,8 @@ class MMRFMNNClassifier(BaseEstimator, ClassifierMixin):
         self.tau_entropy = tau_entropy
         self.tau_disagreement = tau_disagreement
         self.tau_min_reliability = tau_min_reliability
+        self.conflict_detection_enabled = conflict_detection_enabled
+        self.tau_conflict = tau_conflict
         self.random_state = random_state
 
         # Internal components (fitted during fit)
@@ -72,8 +78,11 @@ class MMRFMNNClassifier(BaseEstimator, ClassifierMixin):
         self.temperature_calibrators_: list[TemperatureCalibrator] = []
         self.meta_extractor_ = MetaFeatureExtractor()
         self.fuser_: ReliabilityFuser | None = None
+        self.conflict_detector_: CrossModalConflictDetector | None = None
 
-    def _resolve_param_list(self, param: float | list[float], K: int) -> list[float]:
+    def _resolve_param_list(
+        self, param: float | list[float] | str, K: int
+    ) -> list[float]:
         if isinstance(param, (int, float)):
             return [float(param)] * K
         elif isinstance(param, (list, tuple)):
@@ -82,6 +91,8 @@ class MMRFMNNClassifier(BaseEstimator, ClassifierMixin):
                     f"Parameter list length {len(param)} does not match modality count {K}."
                 )
             return [float(p) for p in param]
+        elif isinstance(param, str) and param.lower() == "adaptive":
+            return [0.2] * K
         raise TypeError(f"Invalid parameter type: {type(param)}")
 
     def fit(
@@ -107,7 +118,6 @@ class MMRFMNNClassifier(BaseEstimator, ClassifierMixin):
         self.classes_ = np.unique(y)
         self.num_classes_ = int(np.max(y)) + 1
 
-        thetas = self._resolve_param_list(self.theta, K)
         gammas = self._resolve_param_list(self.gamma, K)
 
         if mask is None:
@@ -142,17 +152,32 @@ class MMRFMNNClassifier(BaseEstimator, ClassifierMixin):
         self.reliability_estimators_ = []
         self.temperature_calibrators_ = []
 
-        # Stage 1 & 2: Fit Modality Normalizers, FMNN Hyperboxes, and OOF Reliability
-        rule_fallback = self.reliability_model == "rule_based"
-        model_type = "mlp" if self.reliability_model == "mlp" else "logistic"
-
+        # Stage 1: Fit Modality Normalizers
+        Z_train_list: list[np.ndarray] = []
         for k in range(K):
-            # 1. Fit normalizer on training set
             norm_k = ModalityNormalizer(method="minmax")
             pres_k = mask_train[:, k]
             norm_k.fit(X_train[k], mask=pres_k)
             Z_train_k = norm_k.transform(X_train[k])
             self.normalizers_.append(norm_k)
+            Z_train_list.append(Z_train_k)
+
+        # Resolve theta (data-driven adaptive or fixed)
+        if isinstance(self.theta, str) and self.theta.lower() == "adaptive":
+            thetas = AdaptiveThetaEstimator().estimate_multimodal_thetas(
+                Z_train_list, y_train, mask=mask_train
+            )
+        else:
+            thetas = self._resolve_param_list(self.theta, K)
+
+        # Stage 2: Fit FMNN Hyperboxes and OOF Reliability
+        rule_fallback = self.reliability_model == "rule_based"
+        model_type = "mlp" if self.reliability_model == "mlp" else "logistic"
+
+        for k in range(K):
+            norm_k = self.normalizers_[k]
+            Z_train_k = Z_train_list[k]
+            pres_k = mask_train[:, k]
 
             # 2. Fit modality FMNN on present training data
             fmnn_k = FMNN(theta=thetas[k], gamma=gammas[k])
@@ -186,7 +211,19 @@ class MMRFMNNClassifier(BaseEstimator, ClassifierMixin):
                 calibrator_k.fit(ev_calib, y_calib[calib_pres_k])
             self.temperature_calibrators_.append(calibrator_k)
 
-        # Stage 3: Initialize Fuser
+        # Stage 3: Fit Cross-Modal Conflict Detector if enabled
+        if self.conflict_detection_enabled:
+            calib_probs = []
+            for k in range(K):
+                Z_calib_k = self.normalizers_[k].transform(X_calib[k])
+                ev_calib, _, _ = self.fmnns_[k].compute_evidence(Z_calib_k)
+                probs_calib_k = self.temperature_calibrators_[k].calibrate(ev_calib)
+                calib_probs.append(probs_calib_k)
+            self.conflict_detector_ = CrossModalConflictDetector(
+                tau_conflict=self.tau_conflict
+            ).fit(calib_probs, y_calib)
+
+        # Stage 4: Initialize Fuser
         self.fuser_ = ReliabilityFuser(
             fusion_method=self.fusion_method,
             tau_conf=self.tau_conf,
@@ -409,6 +446,16 @@ class MMRFMNNClassifier(BaseEstimator, ClassifierMixin):
                 fused, calibrated_probs, masked_rel, mask_arr
             )
             abstain_mask = self.fuser_.check_abstention(uncertainty)
+
+            if self.conflict_detection_enabled and self.conflict_detector_ is not None:
+                conflict_scores = self.conflict_detector_.compute_conflict_scores(
+                    calibrated_probs, mask_arr
+                )
+                conflict_mask = self.conflict_detector_.check_conflict_abstention(
+                    conflict_scores
+                )
+                abstain_mask = abstain_mask | conflict_mask
+
             preds[abstain_mask] = -1
 
         return preds
@@ -441,7 +488,9 @@ class MMRFMNNClassifier(BaseEstimator, ClassifierMixin):
                     "modality_index": k,
                     "is_present": bool(mask_arr[i, k]),
                     "raw_reliability": float(reliabilities[k][i]),
+                    "reliability": float(reliabilities[k][i]),
                     "fusion_weight_alpha": float(alphas[i, k]),
+                    "fusion_weight": float(alphas[i, k]),
                     "calibrated_distribution": calibrated_probs[k][i].tolist(),
                     "top_membership": float(best_m_k[0]),
                     "winning_hyperbox_per_class": win_boxes[0].tolist(),
@@ -452,6 +501,7 @@ class MMRFMNNClassifier(BaseEstimator, ClassifierMixin):
             "sample_index": i,
             "predicted_class": int(np.argmax(fused[i])),
             "should_abstain": bool(abstain[i]),
+            "abstained": bool(abstain[i]),
             "fused_probabilities": fused[i].tolist(),
             "fusion_method": self.fusion_method,
             "uncertainty_metrics": {
