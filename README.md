@@ -1,6 +1,6 @@
 # MM-RFMNN: Multimodal Reliability-Aware Fuzzy Min-Max Neural Network
 
-[![Tests](https://img.shields.io/badge/tests-21%2F21%20passed-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/tests-27%2F27%20passed-brightgreen.svg)]()
 [![Code Style](https://img.shields.io/badge/code%20style-ruff-black.svg)]()
 [![Status](https://img.shields.io/badge/Phases%201--4-Complete-blue.svg)]()
 
@@ -49,8 +49,8 @@ MM-RFMNN/
 │   │   ├── adaptive_theta.py         # Density-adaptive theta autotuning
 │   │   ├── pruning.py                # Hyperbox subsumption & support pruning
 │   │   └── incremental.py            # Stream adapter & partial_fit online learning
-│   ├── datasets/                     # Real-world dataset loaders
-│   │   └── loader.py                 # UCI Multiple Features (mfeat) 6-modality loader
+│   ├── datasets/                     # Real-world dataset loaders (mfeat, WDBC, Dermatology, HAR, Raw)
+│   │   └── loader.py                 # Multi-domain multimodal dataset loaders with offline caching
 │   ├── encoders/                     # Preprocessors & Subspace Encoders
 │   │   ├── normalizer.py             # Leakage-free MinMax and Quantile normalizers
 │   │   └── multimodal.py             # Turnkey Image, Audio, Text, and Tabular encoders
@@ -66,36 +66,38 @@ MM-RFMNN/
 ├── experiments/                      # Empirical Research & Evaluation Suites
 │   ├── benchmark.py                  # RQ1 - RQ4 synthetic benchmark protocol
 │   ├── evaluate_real_datasets.py     # UCI mfeat 6-modality real-world benchmark
+│   ├── benchmark_multiple_datasets.py# 5-dataset benchmark suite across diverse domains
 │   ├── demo_phase4_capabilities.py   # End-to-end Phase 4 capability demonstration
-│   └── output/                       # Generated diagnostic plots & figures
+│   └── output/                       # Diagnostic figures & benchmark JSON outputs
 │
 ├── notebooks/                        # Interactive Research Demonstrations
 │   ├── MM_RFMNN_Colab_Benchmark.ipynb # Ready-to-run Google Colab notebook
 │   └── MM_RFMNN_Executed.ipynb       # Executed notebook with metrics & outputs
 │
-└── tests/                            # Comprehensive Automated Test Suite (21/21 passed)
+└── tests/                            # Comprehensive Automated Test Suite (27/27 passed)
     ├── test_mm_rfmnn.py              # Phase 1 & 2 unit and integration tests
     ├── test_next_stage.py            # Phase 3 pruning & streaming adaptation tests
-    └── test_phase4.py                # Phase 4 encoders, adaptive theta, conflict tests
+    ├── test_phase4.py                # Phase 4 encoders, adaptive theta, conflict tests
+    └── test_dataset_loaders.py       # Dataset loaders and caching integrity tests
 ```
 
 ---
 
 ## Quickstart
 
-### 1. Run Complete Automated Test Suite (21/21 passing)
+### 1. Run Complete Automated Test Suite (27/27 passing)
 ```bash
 pytest
 ```
 
-### 2. Run Real-World Multimodal Benchmark (UCI Multiple Features)
+### 2. Run Comprehensive 5-Dataset Multimodal Benchmark Suite
 ```bash
-python experiments/evaluate_real_datasets.py
+python experiments/benchmark_multiple_datasets.py
 ```
 
-### 3. Run Synthetic RQ1–RQ4 Benchmark
+### 3. Run UCI Multiple Features Benchmark
 ```bash
-python experiments/benchmark.py
+python experiments/evaluate_real_datasets.py
 ```
 
 ### 4. Run Phase 4 Demonstration & Generate Diagnostic Plots
@@ -105,15 +107,15 @@ python experiments/demo_phase4_capabilities.py
 
 ---
 
-## Empirical Benchmark Findings
+## Comprehensive Multi-Dataset Benchmark Results
 
-### Real-World UCI Multiple Features (6 Modalities, 10 Classes)
-| Evaluation Dimension | Metric | Baseline (Early MLP / FMNN) | MM-RFMNN Result | Advantage |
-| :--- | :--- | :--- | :--- | :--- |
-| **Clean Multi-Modality** | Macro-F1 | 0.9633 (Early MLP) | **0.9567** | High accuracy with full geometric interpretability |
-| **Probability Calibration** | Expected Calibration Error | 0.0812 (Uncalibrated) | **0.0163** | **5.0× superior calibration** |
-| **Extreme Modality Noise** | Macro-F1 at noise $\sigma = 8.0$ | 0.3254 (Early MLP collapses) | **0.9512** | **Complete noise immunity (0.6258 F1 gain)** |
-| **Missing Modalities** | 3 of 6 modalities missing | Fails in standard models | **0.9383** | **Zero-imputation-free graceful degradation** |
-| **Model Compactness** | Hyperbox Count | 3,610 hyperboxes | **1,207 hyperboxes** | **66.6% compression via pruning with 0% loss** |
-| **Selective Classification** | Accuracy at 80% coverage | 94.67% (Full coverage) | **98.75%** | **Near-perfect accuracy on certified predictions** |
+Evaluated across **5 diverse multimodal benchmarks** spanning computer vision, clinical oncology, dermatology, wearable kinematics, and heterogeneous raw signals:
+
+| Dataset | Modalities ($K$) | Domain & Channels | Clean MLP F1 | Clean MM-RFMNN F1 | Extreme Noise MLP F1 ($\sigma=6.0$) | Extreme Noise MM-RFMNN F1 | Missing Channel F1 ($q_0=0$) | Selective Acc (80% Coverage) |
+| :--- | :---: | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **UCI Multiple Features** | 6 | Digits: Fourier, Factors, Karhunen, Morph, Pixel, Zernike | 0.9783 | 0.8622 | 0.0865 *(collapsed)* | **0.8591** | **0.8558** | **87.71%** |
+| **Breast Cancer (WDBC)** | 3 | Oncology: Nucleus Mean, SE, Worst Views | 0.9813 | 0.9501 | 0.4972 *(random)* | **0.9562** | **0.9620** | **99.27%** |
+| **UCI Dermatology** | 2 | Clinical: Symptoms View + Histopathology Biopsy | 0.9796 | 0.8948 | 0.2074 *(collapsed)* | **0.7990** | **0.8710** | **95.45%** |
+| **UCI HAR (Wearables)** | 3 | Kinematics: Body Accel, Gravity, Gyroscope | 0.9649 | 0.6896 | 0.6362 *(degraded)* | **0.8649** | **0.6838** | **66.04%** |
+| **Heterogeneous Raw** | 4 | Multi-Type: Vision (2D), Audio (1D), Text, Tabular | 1.0000 | 1.0000 | 0.7337 *(degraded)* | **0.9966** | **1.0000** | **100.00%** |
 

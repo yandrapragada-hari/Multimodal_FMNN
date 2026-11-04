@@ -1,0 +1,265 @@
+[
+  {
+    "dataset": "UCI Multiple Features (mfeat)",
+    "n_samples": 2000,
+    "n_classes": 10,
+    "n_modalities": 6,
+    "modality_names": [
+      "fourier",
+      "factors",
+      "karhunen",
+      "morphological",
+      "pixel",
+      "zernike"
+    ],
+    "clean": {
+      "mlp": {
+        "f1": 0.9783389758090089,
+        "acc": 0.9783333333333334,
+        "ece": 0.012899624793759248
+      },
+      "early_fmnn": {
+        "f1": 0.9718372742492327,
+        "acc": 0.9716666666666667,
+        "ece": 0.9632949591571179
+      },
+      "late_fmnn": {
+        "f1": 0.8581143886935909,
+        "acc": 0.8583333333333333,
+        "ece": 0.6361974990854024
+      },
+      "mm_rfmnn": {
+        "f1": 0.8622321315813387,
+        "acc": 0.8616666666666667,
+        "ece": 0.6243113748412517,
+        "hyperboxes": 5620
+      }
+    },
+    "robustness": {
+      "noise_sigma": 6.0,
+      "corrupted_modality": "factors",
+      "mlp_noisy_f1": 0.08654204930104417,
+      "mm_rfmnn_noisy_f1": 0.859114496834868,
+      "noise_resilience_gain": 0.7725724475338238
+    },
+    "missingness": {
+      "dropped_modality": "fourier",
+      "mm_rfmnn_missing_f1": 0.8558013129648245,
+      "f1_retention_ratio": 0.9925416620641125
+    },
+    "selective": {
+      "coverage_target": 0.8,
+      "full_accuracy": 0.8616666666666667,
+      "selective_accuracy": 0.8770833333333333,
+      "accuracy_boost": 0.015416666666666634
+    }
+  },
+  {
+    "dataset": "Breast Cancer Multi-View (WDBC)",
+    "n_samples": 569,
+    "n_classes": 2,
+    "n_modalities": 3,
+    "modality_names": [
+      "nucleus_mean",
+      "nucleus_se",
+      "nucleus_worst"
+    ],
+    "clean": {
+      "mlp": {
+        "f1": 0.981329839502129,
+        "acc": 0.9824561403508771,
+        "ece": 0.012350350978748427
+      },
+      "early_fmnn": {
+        "f1": 0.9432626728110599,
+        "acc": 0.9473684210526315,
+        "ece": 0.26444634759711666
+      },
+      "late_fmnn": {
+        "f1": 0.9383116883116882,
+        "acc": 0.9415204678362573,
+        "ece": 0.3605499612627272
+      },
+      "mm_rfmnn": {
+        "f1": 0.9500584112149533,
+        "acc": 0.9532163742690059,
+        "ece": 0.08698021251897524,
+        "hyperboxes": 272
+      }
+    },
+    "robustness": {
+      "noise_sigma": 6.0,
+      "corrupted_modality": "nucleus_se",
+      "mlp_noisy_f1": 0.49716599190283406,
+      "mm_rfmnn_noisy_f1": 0.9561618751144478,
+      "noise_resilience_gain": 0.4589958832116138
+    },
+    "missingness": {
+      "dropped_modality": "nucleus_mean",
+      "mm_rfmnn_missing_f1": 0.962044983722995,
+      "f1_retention_ratio": 1.0126166690032385
+    },
+    "selective": {
+      "coverage_target": 0.8,
+      "full_accuracy": 0.9532163742690059,
+      "selective_accuracy": 0.9927007299270073,
+      "accuracy_boost": 0.03948435565800146
+    }
+  },
+  {
+    "dataset": "UCI Dermatology Multi-View",
+    "n_samples": 366,
+    "n_classes": 6,
+    "n_modalities": 2,
+    "modality_names": [
+      "clinical_symptoms",
+      "histopathology"
+    ],
+    "clean": {
+      "mlp": {
+        "f1": 0.9796296296296297,
+        "acc": 0.9818181818181818,
+        "ece": 0.010289430416911757
+      },
+      "early_fmnn": {
+        "f1": 0.9493087557603687,
+        "acc": 0.9545454545454546,
+        "ece": 0.14792595904921368
+      },
+      "late_fmnn": {
+        "f1": 0.8468450282966412,
+        "acc": 0.8545454545454545,
+        "ece": 0.36166570762212696
+      },
+      "mm_rfmnn": {
+        "f1": 0.8948019090334082,
+        "acc": 0.9,
+        "ece": 0.04691507137007597,
+        "hyperboxes": 408
+      }
+    },
+    "robustness": {
+      "noise_sigma": 6.0,
+      "corrupted_modality": "histopathology",
+      "mlp_noisy_f1": 0.2073563524704637,
+      "mm_rfmnn_noisy_f1": 0.7990405117270788,
+      "noise_resilience_gain": 0.5916841592566151
+    },
+    "missingness": {
+      "dropped_modality": "clinical_symptoms",
+      "mm_rfmnn_missing_f1": 0.8710210083715224,
+      "f1_retention_ratio": 0.9734232790276738
+    },
+    "selective": {
+      "coverage_target": 0.8,
+      "full_accuracy": 0.9,
+      "selective_accuracy": 0.9545454545454546,
+      "accuracy_boost": 0.054545454545454564
+    }
+  },
+  {
+    "dataset": "UCI HAR Multi-Sensor",
+    "n_samples": 1998,
+    "n_classes": 6,
+    "n_modalities": 3,
+    "modality_names": [
+      "body_accelerometer",
+      "gravity_sensor",
+      "gyroscope"
+    ],
+    "clean": {
+      "mlp": {
+        "f1": 0.9648989662168249,
+        "acc": 0.965,
+        "ece": 0.014287041280344493
+      },
+      "early_fmnn": {
+        "f1": 0.8363262295762799,
+        "acc": 0.8383333333333334,
+        "ece": 0.12089021469979308
+      },
+      "late_fmnn": {
+        "f1": 0.6796007938988059,
+        "acc": 0.6833333333333333,
+        "ece": 0.1900965362918852
+      },
+      "mm_rfmnn": {
+        "f1": 0.6896238055715077,
+        "acc": 0.6933333333333334,
+        "ece": 0.441079610241961,
+        "hyperboxes": 3293
+      }
+    },
+    "robustness": {
+      "noise_sigma": 6.0,
+      "corrupted_modality": "gravity_sensor",
+      "mlp_noisy_f1": 0.6361643747980034,
+      "mm_rfmnn_noisy_f1": 0.8648822581244393,
+      "noise_resilience_gain": 0.22871788332643594
+    },
+    "missingness": {
+      "dropped_modality": "body_accelerometer",
+      "mm_rfmnn_missing_f1": 0.6837949751735045,
+      "f1_retention_ratio": 0.9915478115011231
+    },
+    "selective": {
+      "coverage_target": 0.8,
+      "full_accuracy": 0.6933333333333334,
+      "selective_accuracy": 0.6604166666666667,
+      "accuracy_boost": -0.032916666666666705
+    }
+  },
+  {
+    "dataset": "Heterogeneous Raw Multimodal",
+    "n_samples": 1000,
+    "n_classes": 4,
+    "n_modalities": 4,
+    "modality_names": [
+      "vision_raw",
+      "audio_raw",
+      "text_raw",
+      "tabular_raw"
+    ],
+    "clean": {
+      "mlp": {
+        "f1": 1.0,
+        "acc": 1.0,
+        "ece": 0.0026341610519496905
+      },
+      "early_fmnn": {
+        "f1": 1.0,
+        "acc": 1.0,
+        "ece": 0.01959595797039182
+      },
+      "late_fmnn": {
+        "f1": 1.0,
+        "acc": 1.0,
+        "ece": 0.42513425981185865
+      },
+      "mm_rfmnn": {
+        "f1": 1.0,
+        "acc": 1.0,
+        "ece": 0.004129715586247864,
+        "hyperboxes": 1467
+      }
+    },
+    "robustness": {
+      "noise_sigma": 6.0,
+      "corrupted_modality": "audio_raw",
+      "mlp_noisy_f1": 0.7336987191469287,
+      "mm_rfmnn_noisy_f1": 0.9966140471288035,
+      "noise_resilience_gain": 0.2629153279818748
+    },
+    "missingness": {
+      "dropped_modality": "vision_raw",
+      "mm_rfmnn_missing_f1": 1.0,
+      "f1_retention_ratio": 1.0
+    },
+    "selective": {
+      "coverage_target": 0.8,
+      "full_accuracy": 1.0,
+      "selective_accuracy": 1.0,
+      "accuracy_boost": 0.0
+    }
+  }
+]

@@ -101,16 +101,22 @@ class HyperboxBank:
 
         V_arr, W_arr, _ = self.get_arrays()  # (M, d)
 
-        # Broadcast Z: (N, 1, d) vs (1, M, d)
-        Z_exp = Z[:, np.newaxis, :]
-        V_exp = V_arr[np.newaxis, :, :]
-        W_exp = W_arr[np.newaxis, :, :]
+        # Chunk evaluation across samples to cap peak memory to O(B * M * d)
+        batch_size = 128
+        memberships = np.zeros((N, M), dtype=np.float64)
 
-        d_lower = np.maximum(0.0, V_exp - Z_exp)
-        d_upper = np.maximum(0.0, Z_exp - W_exp)
-        outside_distance = np.sum(d_lower + d_upper, axis=-1)  # (N, M)
+        for b_start in range(0, N, batch_size):
+            b_end = min(b_start + batch_size, N)
+            Z_b = Z[b_start:b_end, np.newaxis, :]  # (B, 1, d)
+            V_exp = V_arr[np.newaxis, :, :]       # (1, M, d)
+            W_exp = W_arr[np.newaxis, :, :]       # (1, M, d)
 
-        return np.exp(-self.gamma * outside_distance)
+            d_lower = np.maximum(0.0, V_exp - Z_b)
+            d_upper = np.maximum(0.0, Z_b - W_exp)
+            outside_dist = np.sum(d_lower + d_upper, axis=-1)  # (B, M)
+            memberships[b_start:b_end] = np.exp(-self.gamma * outside_dist)
+
+        return memberships
 
     def compute_class_evidence(
         self, Z: np.ndarray, num_classes: int

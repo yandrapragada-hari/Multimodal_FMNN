@@ -18,7 +18,7 @@ class AdaptiveThetaEstimator:
     margin_safety_factor : float, default=0.5
         Fraction of inter-class separation distance used as upper bound for theta
         to prevent cross-class hyperbox overlaps before contraction.
-    min_theta : float, default=0.05
+    min_theta : float, default=0.20
         Hard lower bound on theta to avoid single-sample hyperbox explosion.
     max_theta : float, default=0.60
         Hard upper bound on theta to prevent over-generalized hyperboxes.
@@ -28,7 +28,7 @@ class AdaptiveThetaEstimator:
         self,
         k_neighbors: int = 5,
         margin_safety_factor: float = 0.50,
-        min_theta: float = 0.05,
+        min_theta: float = 0.20,
         max_theta: float = 0.60,
     ):
         self.k_neighbors = k_neighbors
