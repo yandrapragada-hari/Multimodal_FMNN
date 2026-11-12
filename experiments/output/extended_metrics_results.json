@@ -1,0 +1,162 @@
+{
+  "UCI Multiple Features (mfeat)": {
+    "Base Early FMNN": {
+      "Accuracy": 0.9783333333333334,
+      "Error Rate": 0.021666666666666612,
+      "Sensitivity (Detection Rate)": 0.979554887574513,
+      "Specificity": 0.99759847490393,
+      "Precision": 0.9783167025138841,
+      "F1-Score": 0.97862555984669,
+      "False Alarm Rate (FAR)": 0.002401525096069997,
+      "Expected Calibration Error (ECE)": 0.9683333317478072
+    },
+    "Base Late FMNN": {
+      "Accuracy": 0.8983333333333333,
+      "Error Rate": 0.10166666666666668,
+      "Sensitivity (Detection Rate)": 0.8992139500653156,
+      "Specificity": 0.9886838312800241,
+      "Precision": 0.9000135804226789,
+      "F1-Score": 0.8980210698493059,
+      "False Alarm Rate (FAR)": 0.011316168719975678,
+      "Expected Calibration Error (ECE)": 0.6629678944151481
+    },
+    "MM-RFMNN (Ours)": {
+      "Accuracy": 0.8616666666666667,
+      "Error Rate": 0.1383333333333333,
+      "Sensitivity (Detection Rate)": 0.8642801888978653,
+      "Specificity": 0.9846321096752314,
+      "Precision": 0.8628750026432332,
+      "F1-Score": 0.8627485241133688,
+      "False Alarm Rate (FAR)": 0.015367890324768605,
+      "Expected Calibration Error (ECE)": 0.6179675506622703
+    }
+  },
+  "Breast Cancer (WDBC)": {
+    "Base Early FMNN": {
+      "Accuracy": 0.9590643274853801,
+      "Error Rate": 0.040935672514619936,
+      "Sensitivity (Detection Rate)": 0.9513888888888888,
+      "Specificity": 0.9513888888888888,
+      "Precision": 0.9669811320754718,
+      "F1-Score": 0.9573793840128182,
+      "False Alarm Rate (FAR)": 0.04861111111111111,
+      "Expected Calibration Error (ECE)": 0.21071960513747826
+    },
+    "Base Late FMNN": {
+      "Accuracy": 0.9415204678362573,
+      "Error Rate": 0.05847953216374269,
+      "Sensitivity (Detection Rate)": 0.9343434343434343,
+      "Specificity": 0.9343434343434343,
+      "Precision": 0.9467532467532468,
+      "F1-Score": 0.9392583120204603,
+      "False Alarm Rate (FAR)": 0.06565656565656565,
+      "Expected Calibration Error (ECE)": 0.35742905686255894
+    },
+    "MM-RFMNN (Ours)": {
+      "Accuracy": 0.9532163742690059,
+      "Error Rate": 0.04678362573099415,
+      "Sensitivity (Detection Rate)": 0.9501262626262627,
+      "Specificity": 0.9501262626262627,
+      "Precision": 0.9538189533239039,
+      "F1-Score": 0.951830985915493,
+      "False Alarm Rate (FAR)": 0.049873737373737376,
+      "Expected Calibration Error (ECE)": 0.09077523857536277
+    }
+  },
+  "UCI Dermatology": {
+    "Base Early FMNN": {
+      "Accuracy": 0.9727272727272728,
+      "Error Rate": 0.027272727272727226,
+      "Sensitivity (Detection Rate)": 0.9666666666666667,
+      "Specificity": 0.994736842105263,
+      "Precision": 0.9722222222222223,
+      "F1-Score": 0.9663299663299663,
+      "False Alarm Rate (FAR)": 0.005263157894736842,
+      "Expected Calibration Error (ECE)": 0.14190681036086197
+    },
+    "Base Late FMNN": {
+      "Accuracy": 0.9727272727272728,
+      "Error Rate": 0.027272727272727226,
+      "Sensitivity (Detection Rate)": 0.953968253968254,
+      "Specificity": 0.9939166097060834,
+      "Precision": 0.9800595238095239,
+      "F1-Score": 0.96499642040439,
+      "False Alarm Rate (FAR)": 0.00608339029391661,
+      "Expected Calibration Error (ECE)": 0.4503836976705306
+    },
+    "MM-RFMNN (Ours)": {
+      "Accuracy": 0.9454545454545454,
+      "Error Rate": 0.054545454545454564,
+      "Sensitivity (Detection Rate)": 0.9206349206349205,
+      "Specificity": 0.9894550205300484,
+      "Precision": 0.948529411764706,
+      "F1-Score": 0.9249861249861251,
+      "False Alarm Rate (FAR)": 0.010544979469951475,
+      "Expected Calibration Error (ECE)": 0.16191013740810392
+    }
+  },
+  "UCI Human Activity Recognition (HAR)": {
+    "Base Early FMNN": {
+      "Accuracy": 0.8222222222222222,
+      "Error Rate": 0.1777777777777778,
+      "Sensitivity (Detection Rate)": 0.826333856616977,
+      "Specificity": 0.9645313320989471,
+      "Precision": 0.8365463501148458,
+      "F1-Score": 0.823762322582095,
+      "False Alarm Rate (FAR)": 0.03546866790105269,
+      "Expected Calibration Error (ECE)": 0.5402438219587439
+    },
+    "Base Late FMNN": {
+      "Accuracy": 0.7155555555555555,
+      "Error Rate": 0.2844444444444445,
+      "Sensitivity (Detection Rate)": 0.7233640691684352,
+      "Specificity": 0.9429091355452691,
+      "Precision": 0.7341588000606989,
+      "F1-Score": 0.7234870318967971,
+      "False Alarm Rate (FAR)": 0.05709086445473086,
+      "Expected Calibration Error (ECE)": 0.2211105109304435
+    },
+    "MM-RFMNN (Ours)": {
+      "Accuracy": 0.6355555555555555,
+      "Error Rate": 0.36444444444444446,
+      "Sensitivity (Detection Rate)": 0.648843621250289,
+      "Specificity": 0.926926274054586,
+      "Precision": 0.6642483314982979,
+      "F1-Score": 0.6450534593131982,
+      "False Alarm Rate (FAR)": 0.07307372594541404,
+      "Expected Calibration Error (ECE)": 0.4138778283337491
+    }
+  },
+  "Heterogeneous Raw Multimodal": {
+    "Base Early FMNN": {
+      "Accuracy": 1.0,
+      "Error Rate": 0.0,
+      "Sensitivity (Detection Rate)": 1.0,
+      "Specificity": 1.0,
+      "Precision": 1.0,
+      "F1-Score": 1.0,
+      "False Alarm Rate (FAR)": 0.0,
+      "Expected Calibration Error (ECE)": 0.014398583288878997
+    },
+    "Base Late FMNN": {
+      "Accuracy": 1.0,
+      "Error Rate": 0.0,
+      "Sensitivity (Detection Rate)": 1.0,
+      "Specificity": 1.0,
+      "Precision": 1.0,
+      "F1-Score": 1.0,
+      "False Alarm Rate (FAR)": 0.0,
+      "Expected Calibration Error (ECE)": 0.43955405525735924
+    },
+    "MM-RFMNN (Ours)": {
+      "Accuracy": 1.0,
+      "Error Rate": 0.0,
+      "Sensitivity (Detection Rate)": 1.0,
+      "Specificity": 1.0,
+      "Precision": 1.0,
+      "F1-Score": 1.0,
+      "False Alarm Rate (FAR)": 0.0,
+      "Expected Calibration Error (ECE)": 0.0037277355877592525
+    }
+  }
+}

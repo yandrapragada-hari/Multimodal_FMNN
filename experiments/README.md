@@ -56,6 +56,12 @@ These tests prove that MM-RFMNN does not break when things go wrong.
 python experiments/benchmark_multiple_datasets.py
 ```
 
+### Run the Extended Diagnostic Metrics Suite (10 Metrics per Dataset)
+```bash
+python experiments/evaluate_extended_metrics.py
+```
+This computes Accuracy, Error Rate, Sensitivity, Specificity, Precision, F1-Score, False Alarm Rate, and ECE for Base Early FMNN, Base Late FMNN, and MM-RFMNN, saving full results to `experiments/output/extended_metrics_results.json` (see root [EXTENDED_METRICS_BENCHMARK.md](../EXTENDED_METRICS_BENCHMARK.md)).
+
 ### Run the Core RQ1 - RQ4 Synthetic Benchmark
 ```bash
 python experiments/benchmark.py

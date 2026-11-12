@@ -56,8 +56,10 @@ Most modern AI models cannot do this. They throw all their sensor data into one 
 ```
 MM-RFMNN/
 ├── README.md                         # This plain-English overview
+├── EXTENDED_METRICS_BENCHMARK.md     # Detailed per-dataset evaluation tables (10 metrics)
+├── learn.md                          # Full mathematical formulas, derivations, and pipeline
 ├── PROJECT_STATUS_AND_ARCHITECTURE_REPORT.md # Detailed architecture and status report
-├── PROJECT_STATUS_AND_ARCHITECTURE_REPORT.docx # Beautiful Word document report (61KB)
+├── PROJECT_STATUS_AND_ARCHITECTURE_REPORT.docx # Word document report (61KB)
 ├── ARCHITECTURE_AND_PIPELINE_GUIDE.md # Step-by-step pipeline and encoder guide
 ├── MM_RFMNN_Algorithm_Blueprint.md   # Mathematical equations and research blueprint
 ├── pytest.ini                        # Automated test configuration
@@ -155,3 +157,5 @@ Performance comparison on the exact same datasets showing what happens when reli
 - **Base Early FMNN Collapses Under Noise**: Concatenating all senses into one vector means noise on one channel pushes the coordinates outside all learned hyperboxes, dropping F1 to 1.6%.
 - **Base Late FMNN Suffers From Poor Calibration**: Without temperature calibration, raw exponential distances report over 90% confidence on incorrect predictions (ECE up to 0.63).
 - **MM-RFMNN Fixes Both**: Dynamically gates noisy channels to 0 weight using out-of-fold meta-reliability and calibrates confidence probabilities to match empirical reality.
+
+For individual per-dataset tables evaluating Sensitivity, Specificity, Precision, Recall, False Alarm Rate, Error Rate, and Calibration across all 5 benchmarks, see [EXTENDED_METRICS_BENCHMARK.md](EXTENDED_METRICS_BENCHMARK.md).
