@@ -134,6 +134,78 @@ We tested MM-RFMNN and standard deep neural networks (MLPs) across 5 different r
 
 ---
 
+## Per-Dataset Benchmark: Clean vs. Severe Noise Comparison
+
+Comprehensive empirical evaluation comparing **FMNN Base (Early Concat)**, **FMNN without Reliability (Late Mean)**, and **Ours (MM-RFMNN)** under both pristine (**Clean**) and extreme sensor corruption (**Noisy**, $\sigma=6.0$ Gaussian shock on a single channel).
+
+Linear constraints verified:
+1. Coordinate Order: $v_{jr} \le w_{jr}$
+2. Size Bound: $w_{jr} - v_{jr} \le \theta$
+3. Cross-Class Separation: $\text{Overlap} = 0.0\%$ (Simpson contraction)
+4. Probability Simplex: $\sum_c p_c = 1, \; p_c \ge 0$
+
+### 1. UCI Multiple Features (mfeat Handwritten Digits)
+- Profile: 2,000 samples | 10 classes | 6 modalities | Corrupted channel: `factors` ($\sigma=6.0$)
+
+| Condition | Model Architecture | Accuracy | MSE (Brier) | MAE | RMSE | R^2 Score | Linear Feasibility | Overlap Violation |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Clean** | FMNN Base (Early Concat) | 97.17% | 0.0992 | 0.0992 | 0.3149 | -0.1018 | 0.0% (Simplex fails) | 0.0% |
+| | FMNN w/o Reliability (Late Mean) | 85.83% | 0.0697 | 0.1564 | 0.2640 | 0.2253 | 100.0% | 0.0% |
+| | **Ours (MM-RFMNN)** | 86.17% | 0.0674 | 0.1534 | 0.2597 | 0.2509 | 100.0% | 0.0% |
+| **Noisy** | FMNN Base (Early Concat) | 10.00% (-87.2%) | 0.1000 | 0.1000 | 0.3162 | -0.1111 | 0.0% | 0.0% |
+| | FMNN w/o Reliability (Late Mean) | 85.17% | 0.0704 | 0.1572 | 0.2653 | 0.2179 | 100.0% | 0.0% |
+| | **Ours (MM-RFMNN)** | **85.83%** | **0.0663** | **0.1520** | **0.2574** | **0.2637** | **100.0%** | **0.0%** |
+
+### 2. Breast Cancer Multi-View (WDBC)
+- Profile: 569 samples | 2 classes | 3 modalities | Corrupted channel: `nucleus_se` ($\sigma=6.0$)
+
+| Condition | Model Architecture | Accuracy | MSE (Brier) | MAE | RMSE | R^2 Score | Linear Feasibility | Overlap Violation |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Clean** | FMNN Base (Early Concat) | 94.74% | 0.1256 | 0.3218 | 0.3544 | 0.4636 | 100.0% | 0.0% |
+| | FMNN w/o Reliability (Late Mean) | 94.15% | 0.1820 | 0.4200 | 0.4266 | 0.2230 | 100.0% | 0.0% |
+| | **Ours (MM-RFMNN)** | 95.32% | 0.0420 | 0.1352 | 0.2049 | 0.8207 | 100.0% | 0.0% |
+| **Noisy** | FMNN Base (Early Concat) | 37.43% (-57.3%) | 0.5000 | 0.5000 | 0.7071 | -1.1350 | 0.0% | 0.0% |
+| | FMNN w/o Reliability (Late Mean) | 94.15% | 0.1658 | 0.3976 | 0.4072 | 0.2919 | 100.0% | 0.0% |
+| | **Ours (MM-RFMNN)** | **95.91%** | **0.0486** | **0.1804** | **0.2205** | **0.7924** | **100.0%** | **0.0%** |
+
+### 3. UCI Dermatology Multi-View
+- Profile: 366 samples | 6 classes | 2 modalities | Corrupted channel: `histopathology` ($\sigma=6.0$)
+
+| Condition | Model Architecture | Accuracy | MSE (Brier) | MAE | RMSE | R^2 Score | Linear Feasibility | Overlap Violation |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Clean** | FMNN Base (Early Concat) | 95.45% | 0.0223 | 0.0681 | 0.1493 | 0.8197 | 100.0% | 0.0% |
+| | FMNN w/o Reliability (Late Mean) | 85.45% | 0.0625 | 0.1698 | 0.2500 | 0.5033 | 100.0% | 0.0% |
+| | **Ours (MM-RFMNN)** | 90.00% | 0.0263 | 0.0594 | 0.1621 | 0.7906 | 100.0% | 0.0% |
+| **Noisy** | FMNN Base (Early Concat) | 57.27% (-38.2%) | 0.1667 | 0.1667 | 0.4082 | -0.2111 | 0.0% | 0.0% |
+| | FMNN w/o Reliability (Late Mean) | 81.82% | 0.0745 | 0.1885 | 0.2729 | 0.4203 | 100.0% | 0.0% |
+| | **Ours (MM-RFMNN)** | **80.91%** | **0.0643** | **0.1723** | **0.2537** | **0.5051** | **100.0%** | **0.0%** |
+
+### 4. UCI HAR Multi-Sensor (Activity Recognition)
+- Profile: 1,998 samples | 6 classes | 3 modalities | Corrupted channel: `gravity_sensor` ($\sigma=6.0$)
+
+| Condition | Model Architecture | Accuracy | MSE (Brier) | MAE | RMSE | R^2 Score | Linear Feasibility | Overlap Violation |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Clean** | FMNN Base (Early Concat) | 83.83% | 0.0514 | 0.0776 | 0.2267 | 0.6300 | 0.0% | 0.0% |
+| | FMNN w/o Reliability (Late Mean) | 68.33% | 0.0793 | 0.1767 | 0.2816 | 0.4292 | 100.0% | 0.0% |
+| | **Ours (MM-RFMNN)** | 69.33% | 0.1206 | 0.2566 | 0.3473 | 0.1315 | 100.0% | 0.0% |
+| **Noisy** | FMNN Base (Early Concat) | 76.83% (-7.0%) | 0.1667 | 0.1667 | 0.4082 | -0.2000 | 0.0% | 0.0% |
+| | FMNN w/o Reliability (Late Mean) | 84.00% | 0.0424 | 0.1004 | 0.2060 | 0.6946 | 0.0% | 0.0% |
+| | **Ours (MM-RFMNN)** | **86.33%** | 0.1339 | 0.2720 | 0.3660 | 0.0356 | **100.0%** | **0.0%** |
+
+### 5. Heterogeneous Raw Multimodal (Vision + Audio + Text + Tabular)
+- Profile: 1,000 samples | 4 classes | 4 modalities | Corrupted channel: `audio_raw` ($\sigma=6.0$)
+
+| Condition | Model Architecture | Accuracy | MSE (Brier) | MAE | RMSE | R^2 Score | Linear Feasibility | Overlap Violation |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Clean** | FMNN Base (Early Concat) | 100.0% | 0.0003 | 0.0098 | 0.0169 | 0.9985 | 100.0% | 0.0% |
+| | FMNN w/o Reliability (Late Mean) | 100.0% | 0.0636 | 0.2126 | 0.2521 | 0.6598 | 100.0% | 0.0% |
+| | **Ours (MM-RFMNN)** | 100.0% | 0.0005 | 0.0021 | 0.0226 | 0.9973 | 100.0% | 0.0% |
+| **Noisy** | FMNN Base (Early Concat) | 100.0% | 0.0397 | 0.0667 | 0.1992 | 0.7887 | 0.0% | 0.0% |
+| | FMNN w/o Reliability (Late Mean) | 100.0% | 0.0645 | 0.2163 | 0.2541 | 0.6550 | 100.0% | 0.0% |
+| | **Ours (MM-RFMNN)** | **99.67%** | **0.0233** | **0.1305** | **0.1526** | **0.8757** | **100.0%** | **0.0%** |
+
+---
+
 ## Base FMNN vs. MM-RFMNN: Impact of Reliability & Calibration
 
 Performance comparison on the exact same datasets showing what happens when reliability weighting, temperature calibration, and adaptive box-sizing are omitted:
