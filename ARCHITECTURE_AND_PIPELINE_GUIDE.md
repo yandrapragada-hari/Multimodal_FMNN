@@ -139,12 +139,12 @@ Let's walk through an actual example with two senses:
    - Chest Sensor lands far outside all normal patient boxes (Familiarity = 0.08).
 
 4. Reliability Lie Detector (Step 4):
-   - Blood Test has high familiarity and a wide margin -> Reliability score r_1 = 0.92 (High Trust).
-   - Chest Sensor is in the wilderness with high noise -> Reliability score r_2 = 0.05 (Low Trust).
+   - Blood Test has high familiarity and a wide margin -> Reliability score $r_1 = 0.92$ (High Trust).
+   - Chest Sensor is in the wilderness with high noise -> Reliability score $r_2 = 0.05$ (Low Trust).
 
 5. Smart Blending (Step 6):
-   - Blood Test gets 95% of the voting power (alpha_1 = 0.95).
-   - Chest Sensor gets only 5% of the voting power (alpha_2 = 0.05).
+   - Blood Test gets 95% of the voting power ($\alpha_1 = 0.95$).
+   - Chest Sensor gets only 5% of the voting power ($\alpha_2 = 0.05$).
 
 6. Final Outcome:
    - The noisy chest sensor's static is completely muted.
@@ -208,24 +208,24 @@ $\theta_k$ is computed **once per modality** during `model.fit()`, immediately a
 
 2. **Intra-Class Cluster Spread (`mean_intra`)**:
    For each class $c$, calculate $k$-NN Manhattan distances between samples of the same class:
-   $$D_{\text{intra}} = \text{kNN}(Z_c, k=5, \text{metric}=\text{manhattan})$$
-   $$\text{mean\_intra} = \frac{\text{median}(D_{\text{intra}})}{\max(d_k, 1)}$$
-   This measures the natural local density of clusters within that modality.
+   $$D_{\text{intra}} = \text{kNN}(Z_c, k=5)$$
+   $$\bar{D}_{\text{intra}} = \frac{\text{median}(D_{\text{intra}})}{\max(d_k, 1)}$$
+   This measures the natural local density of clusters within that modality using Manhattan distance.
 
 3. **Inter-Class Boundary Margin (`min_inter`)**:
    Calculate the 1-NN Manhattan distance from each sample $x \in c$ to the nearest sample in opposing classes $y \neq c$:
-   $$D_{\text{inter}} = \text{1-NN}(Z_c, Z_{\text{other}}, \text{metric}=\text{manhattan})$$
-   $$\text{min\_inter} = \frac{P_{15}(D_{\text{inter}})}{\max(d_k, 1)}$$
+   $$D_{\text{inter}} = \text{1-NN}(Z_c, Z_{\text{other}})$$
+   $$D_{\text{inter}}^{\min} = \frac{P_{15}(D_{\text{inter}})}{\max(d_k, 1)}$$
    The 15th percentile identifies the narrowest separation boundary between classes.
 
 4. **Safety Factor & Target Selection**:
    To prevent hyperboxes from crossing class boundaries prior to contraction:
-   $$\theta_{\text{target}} = \max(\text{mean\_intra}, \; 0.50 \cdot \text{min\_inter})$$
+   $$\theta_{\text{target}} = \max\left(\bar{D}_{\text{intra}}, \; 0.50 \cdot D_{\text{inter}}^{\min}\right)$$
 
 5. **Dimensionality Damping & Clipping**:
-   Higher dimensions naturally suffer from coordinate expansion volume inflation. A logarithmic damping factor tightens the bound:
-   $$\text{dim\_factor} = \frac{1}{1 + 0.05 \cdot \ln(1 + d_k)}$$
-   $$\theta_k = \text{clip}\left(\theta_{\text{target}} \cdot \text{dim\_factor}, \; \theta_{\min}=0.20, \; \theta_{\max}=0.60\right)$$
+   Higher dimensions naturally suffer from coordinate expansion volume inflation. A logarithmic damping factor $\lambda_{\text{dim}}$ tightens the bound:
+   $$\lambda_{\text{dim}} = \frac{1}{1 + 0.05 \cdot \ln(1 + d_k)}$$
+   $$\theta_k = \text{clip}\left(\theta_{\text{target}} \cdot \lambda_{\text{dim}}, \; \theta_{\min}=0.20, \; \theta_{\max}=0.60\right)$$
 
 This sets optimal, modality-specific expansion bounds $\theta_k$ tailored to feature count, cluster density, and class margin.
 
